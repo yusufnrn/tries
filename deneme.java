@@ -6,3 +6,6 @@ public class deneme {
 
     }
 }
+
+
+// Hadi bakalım gitçi :D
