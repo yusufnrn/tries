@@ -1,65 +1,92 @@
-const container = document.querySelector('.container');
-const count = document.getElementById('count');
-const amount = document.getElementById('amount');
-const select = document.getElementById('movie');
-const seats = document.querySelectorAll('.seat:not(.reserved)');
+const display = document.querySelector('.calculator-input');
+const keys = document.querySelector('.calculator-keys');
 
-getFromLocalStorage();
-calculateTotal();
-container.addEventListener('click',function (e){
-    if (e.target.classList.contains('seat') && !e.target.classList.contains('reserved')){
-        e.target.classList.toggle('selected');
-        calculateTotal()
+let displayValue = '0';
+let firstValue = null;
+let operator = null;
+let waitingForSecondValue = false;
+
+updateDisplay();
+
+function updateDisplay(){
+    display.value = displayValue;
+}
+
+
+keys.addEventListener('click', function (e){
+    const element = e.target;
+    const value = element.value;
+
+    if (!element.matches('button')) return;
+
+    switch (value){
+        case '+':
+        case '-':
+        case '*':
+        case '/':
+        case '=':
+            handleOperator(value);
+            break;
+        case '.':
+            inputDecimal();
+            break;
+        case 'clear':
+            clear();
+            break;
+        default:
+            inputNumber(element.value);
     }
+     updateDisplay();
 });
 
-select.addEventListener('change', function (e){
-    calculateTotal();
-});
+function handleOperator(nextOperator){
+    const value = parseFloat(displayValue);
 
-function calculateTotal(){
-    const selectedSeats = container.querySelectorAll('.seat.selected');
+    if (operator && waitingForSecondValue){
+        operator = nextOperator;
+        return;
+    }
 
-    const selectedSeatsArr = [];
-    const seatsArr = [];
+    if (firstValue === null){
+        firstValue = value;
+    }else if(operator){
+        const result = calculate(firstValue, value, operator);
+        displayValue = `${parseFloat(result.toFixed(7))}`;
+        firstValue = result;
+    }
 
-    selectedSeats.forEach(function (seat){
-        selectedSeatsArr.push(seat);
-    });
-
-    seats.forEach(function (seat){
-        seatsArr.push(seat);
-    });
-
-    let selectedSeatIndexes = selectedSeatsArr.map(function (seat){
-        return seatsArr.indexOf(seat);
-    });
-
-    let selectedSeatCount = selectedSeats.length;
-    count.innerText = selectedSeatCount;
-    amount.innerText = selectedSeatCount * select.value;
-
-    saveToLocalStorage(selectedSeatIndexes);
+    waitingForSecondValue = true;
+    operator = nextOperator;
 }
 
-function getFromLocalStorage(){
-const selectedSeats = JSON.parse(localStorage.getItem('selectedSeats'));
+function calculate(first, second, operator){
+    if (operator === "+"){
+        return first + second;
+    }else if (operator === "-"){
+        return first - second;
+    }else if (operator === "*"){
+        return first * second;
+    }else if (operator === '/'){
+        return first / second;
+    }
+    return second;
+}
+function inputNumber(num){
+    if (waitingForSecondValue){
+        displayValue = num;
+        waitingForSecondValue = false;
+    }else {
+        displayValue = displayValue === '0'? num: displayValue + num;
+    }
 
-if (selectedSeats != null && selectedSeats.length > 0){
-    seats.forEach(function (seat, index){
-       if (selectedSeats.indexOf(index) > -1){
-           seat.classList.add('selected');
-       }
-    });
 }
 
-const selectedMovieIndex = localStorage.getItem('selectedMovieIndex');
+function inputDecimal(){
+    if (!displayValue.includes('.')) {
+        displayValue += '.';
+    }
+}
 
-if (selectedMovieIndex != null){
-    select.selectedIndex = selectedMovieIndex;
-}
-}
-function saveToLocalStorage(indexes){
-    localStorage.setItem('selectedSeats', JSON.stringify(indexes));
-    localStorage.setItem('selectedMovieIndex', select.selectedIndex);
+function clear(){
+    displayValue = '0';
 }
