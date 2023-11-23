@@ -1,92 +1,65 @@
-const display = document.querySelector('.calculator-input');
-const keys = document.querySelector('.calculator-keys');
+const container = document.querySelector('.container');
+const count = document.getElementById('count');
+const amount = document.getElementById('amount');
+const select = document.getElementById('movie');
+const seats = document.querySelectorAll('.seat:not(.reserved)');
 
-let displayValue = '0';
-let firstValue = null;
-let operator = null;
-let waitingForSecondValue = false;
-
-updateDisplay();
-
-function updateDisplay(){
-    display.value = displayValue;
-}
-
-
-keys.addEventListener('click', function (e){
-    const element = e.target;
-    const value = element.value;
-
-    if (!element.matches('button')) return;
-
-    switch (value){
-        case '+':
-        case '-':
-        case '*':
-        case '/':
-        case '=':
-            handleOperator(value);
-            break;
-        case '.':
-            inputDecimal();
-            break;
-        case 'clear':
-            clear();
-            break;
-        default:
-            inputNumber(element.value);
+getFromLocalStorage();
+calculateTotal();
+container.addEventListener('click',function (e){
+    if (e.target.classList.contains('seat') && !e.target.classList.contains('reserved')){
+        e.target.classList.toggle('selected');
+        calculateTotal()
     }
-     updateDisplay();
 });
 
-function handleOperator(nextOperator){
-    const value = parseFloat(displayValue);
+select.addEventListener('change', function (e){
+    calculateTotal();
+});
 
-    if (operator && waitingForSecondValue){
-        operator = nextOperator;
-        return;
-    }
+function calculateTotal(){
+    const selectedSeats = container.querySelectorAll('.seat.selected');
 
-    if (firstValue === null){
-        firstValue = value;
-    }else if(operator){
-        const result = calculate(firstValue, value, operator);
-        displayValue = `${parseFloat(result.toFixed(7))}`;
-        firstValue = result;
-    }
+    const selectedSeatsArr = [];
+    const seatsArr = [];
 
-    waitingForSecondValue = true;
-    operator = nextOperator;
+    selectedSeats.forEach(function (seat){
+        selectedSeatsArr.push(seat);
+    });
+
+    seats.forEach(function (seat){
+        seatsArr.push(seat);
+    });
+
+    let selectedSeatIndexes = selectedSeatsArr.map(function (seat){
+        return seatsArr.indexOf(seat);
+    });
+
+    let selectedSeatCount = selectedSeats.length;
+    count.innerText = selectedSeatCount;
+    amount.innerText = selectedSeatCount * select.value;
+
+    saveToLocalStorage(selectedSeatIndexes);
 }
 
-function calculate(first, second, operator){
-    if (operator === "+"){
-        return first + second;
-    }else if (operator === "-"){
-        return first - second;
-    }else if (operator === "*"){
-        return first * second;
-    }else if (operator === '/'){
-        return first / second;
-    }
-    return second;
-}
-function inputNumber(num){
-    if (waitingForSecondValue){
-        displayValue = num;
-        waitingForSecondValue = false;
-    }else {
-        displayValue = displayValue === '0'? num: displayValue + num;
-    }
+function getFromLocalStorage(){
+const selectedSeats = JSON.parse(localStorage.getItem('selectedSeats'));
 
+if (selectedSeats != null && selectedSeats.length > 0){
+    seats.forEach(function (seat, index){
+       if (selectedSeats.indexOf(index) > -1){
+           seat.classList.add('selected');
+       }
+    });
 }
 
-function inputDecimal(){
-    if (!displayValue.includes('.')) {
-        displayValue += '.';
-    }
-}
+const selectedMovieIndex = localStorage.getItem('selectedMovieIndex');
 
-function clear(){
-    displayValue = '0';
+if (selectedMovieIndex != null){
+    select.selectedIndex = selectedMovieIndex;
+}
+}
+function saveToLocalStorage(indexes){
+    localStorage.setItem('selectedSeats', JSON.stringify(indexes));
+    localStorage.setItem('selectedMovieIndex', select.selectedIndex);
 }
